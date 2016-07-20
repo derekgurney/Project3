@@ -5,3 +5,8 @@ https://mapzen.com/data/metro-extracts/#vancouver-canada
 Includes the city of Vancouver as well as parts of Richmond, North Vancouver, and North Vancouver City.
 
 Chosen because I lived there once.
+
+db.yvr.find({“address.housenumber” : {$exists : true}}).forEach( function(obj) { obj.address.housenumber = new NumberInt( obj.address.housenumber ); db.my_collection.save(obj); } );
+
+
+db.yvr.aggregate([ { $match: {"amenity": "Crematorium"} },{$group: {_id: "id"}} ] )  
