@@ -1,0 +1,21 @@
+def audit(osmfile):
+    osm_file = open(osmfile, "r")
+    postal_codes = defaultdict(set)
+    for event, elem in ET.iterparse(osm_file, events=("start",)):
+
+        if elem.tag == "node" or elem.tag == "way":
+            for tag in elem.iter("tag"):
+                if is_postal_code(tag):
+                    audit_postal_code(postal_codes, tag.attrib['v'])
+    osm_file.close()
+    return postal_codes
+
+
+def update_name(name, mapping):
+
+    # YOUR CODE HERE
+    for key, value in mapping.iteritems():
+        key_at_end = re.escape(key) + r"$"
+        name = re.sub(key_at_end, value, name)
+
+    return name
