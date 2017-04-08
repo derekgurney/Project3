@@ -36,7 +36,7 @@ filename = osmfile
 
 # # Code for creating sample
 
-# In[13]:
+# In[2]:
 
 '''
 #!/usr/bin/env python
@@ -79,7 +79,7 @@ with open(SAMPLE_FILE, 'wb') as output:
 # # Key Types
 # [Same as Lesson 6 code]
 
-# In[15]:
+# In[3]:
 
 """
 Your task is to explore the data a bit more.
@@ -149,7 +149,7 @@ process_map(osmfile)
 # # Users
 # [Same as Lesson 6 code]
 
-# In[16]:
+# In[ ]:
 
 def get_user(element):
     return
@@ -171,7 +171,7 @@ pprint.pprint(process_map(osmfile))
 
 # # Auditing 
 
-# In[12]:
+# In[2]:
 
 
 ############ Street types
@@ -181,6 +181,18 @@ street_type_re = re.compile(r'\b\S+\.?$', re.IGNORECASE)
 expected_street = ["Street", "Avenue", "Boulevard", "Drive", "Alley", "Broadway", "Walk","Crescent", "Esplanade", "Highway","Kingsway","Mews","Mall","Court", "Place", "Square", "Lane", "Road", 
             "Trail", "Parkway", "South","Commons","Way","West","East"]
 
+mapping_street = { "Blvd": "Boulevard",
+            "St": "Street",
+            "St.": "Street",
+            "Ave": "Avenue",
+            "Rd.": "Road",
+            "Steet": "Street",
+            "street": "Street",
+            "venue": "Avenue",
+            "Broughton": "Broughton Street",
+            "Jervis": "Jervis Street",
+            "Jarvis": "Jervis Street"
+            }
 
 def audit_street_type(street_types, street_name):
     '''If the street type is not in the list of expected types, adds the type to a dictionary.'''
@@ -200,6 +212,10 @@ def is_street_name(elem):
 
 expected_city = ['Vancouver', 'North Vancouver', 'Richmond','North Vancouver City']
 
+mapping_city = { "Vancovuer": "Vancouver",
+            "vancouver": "Vancouver",
+            }
+
 def audit_city_name(city_names, city_name):
     '''If the city name is not in the list of expected cities, adds the city to a dictionary.'''
     if city_name not in expected_city:
@@ -213,6 +229,11 @@ def is_city_name(elem):
 ############ Province
 expected_prov = ['British Columbia']
 
+mapping_prov = { "BC": "British Columbia",
+            "B.C.": "British Columbia",
+            "bc": "British Columbia",
+            }
+
 def audit_prov_name(prov_names, prov_name):
     '''If the province is not in the list of expected provinces, adds the province to a dictionary.'''
     if prov_name not in expected_prov:
@@ -224,24 +245,21 @@ def is_prov_name(elem):
 
 ############ Postal Codes
 
-expected_postalcodes_re = re.compile(r'V[5|6][A-Z] [0-9][A-Z][0-9]$')
+mapping_postalcodes = defaultdict(set)
+
+postalcode_valid_except_caps = re.compile(r'[a-z][5|6|7][a-z][ ][0-9][a-z][0-9]$')
+postalcode_valid_except_spacing_and_possibly_caps = re.compile(r'[A-Za-z][5|6|7][A-Za-z][0-9][A-Za-z][0-9]$')
 
 def audit_postal_code(postal_codes, postal_code):
-    '''If the postal code is not in the expected format, add the postal code to a dictionary.'''
-    if not expected_postalcodes_re.search(postal_code):
+    '''If the postal code is valid but for specific formatting issues, fix formatting.'''
+    if postalcode_valid_except_caps.search(postal_code):
         postal_codes[postal_code].add(postal_code)
-
-    '''
-    Pseudo code:
-    postalcoce_missing_space_re = 
-    if postalcode_missing_spacewithspace
-        postal_codes
-    #could maybe expand to modify vs flag
-        
-    
-    '''
-        
-        
+        mapping_postalcodes[postal_code] = postal_code.upper()
+    elif postalcode_valid_except_spacing_and_possibly_caps.search(postal_code):
+        postal_codes[postal_code].add(postal_code)
+        mapping_postalcodes[postal_code] = postal_code[0:3].upper() + " " + postal_code[3:6].upper()
+    else:
+        pass
         
 def is_postal_code(elem):
     '''Checks if elem.attrib['k'] is addr:postcode.'''    
@@ -284,102 +302,73 @@ def update_name_with_mapping(name, mapping):
 
     return name
 
-def update_name_with_mapping(name, mapping):
-
-    for key, value in mapping.iteritems():
-        key_at_end = re.escape(key) + r"$"
-        name = re.sub(key_at_end, value, name)
-
-    return name
-
-def update_name_with_formula(name, mapping):
-
-    for key, value in mapping.iteritems():
-        key_at_end = re.escape(key) + r"$"
-        name = re.sub(key_at_end, value, name)
-
-    return name
-
-
-
-# In[6]:
-
 st_types, cty_names, prv_names, pstl_codes = audit(osmfile)
+print 'Audit complete'
 
 
-# # Updating Street Types
+# # Testing Street Types updating
 # [Same as Lesson 6 code]
 
-# In[15]:
-
-mapping_street = { "Blvd": "Boulevard",
-            "St": "Street",
-            "St.": "Street",
-            "Ave": "Avenue",
-            "Rd.": "Road",
-            "Steet": "Street",
-            "street": "Street",
-            "venue": "Avenue",
-            "Broughton": "Broughton Street",
-            "Jervis": "Jervis Street",
-            "Jarvis": "Jervis Street"
-            }
+# In[3]:
 
 pprint.pprint(dict(st_types))
 for st_type, ways in st_types.iteritems():
     for name in ways:
         better_name = update_name_with_mapping(name, mapping_street)
-print(better_name)
+        print(name, better_name) 
+        '''Note: there isn't a mapping for 
+        every unexpected entry, so some better names will be unchanged from name '''
+    
 
 
-# # Updating City Names
+# # Testing City Names updating
 # [Adapted from Lesson 6 code]
 
-# In[8]:
-
-mapping_city = { "Vancovuer": "Vancouver",
-            "vancouver": "Vancouver",
-            }
+# In[4]:
 
 pprint.pprint(dict(cty_names))
-for cty_names, ways in cty_names.iteritems():
+for cty_name, ways in cty_names.iteritems():
     for name in ways:
         better_name = update_name_with_mapping(name, mapping_city)
+        print name, better_name 
+        '''Note: there isn't a mapping for 
+        every unexpected entry, so some better names will be unchanged from name '''
 
 
-# # Updating Province Name
-# [Same as Auditing City Name; I realize that it would be better to have these functions be generic, so that they could handle both city names and province names, but I didn't have time to implement that.]
+# # Testing Province Name updating
+# 
 
-# In[9]:
-
-mapping_prov = { "BC": "British Columbia",
-            "B.C.": "British Columbia",
-            "bc": "British Columbia",
-            }
+# In[5]:
 
 pprint.pprint(dict(prv_names))
-for st_type, ways in prv_names.iteritems():
+for prv_name, ways in prv_names.iteritems():
     for name in ways:
         better_name = update_name_with_mapping(name, mapping_prov)
+        print name, better_name 
+        '''Note: there isn't a mapping for 
+        every unexpected entry, so some better names will be unchanged from name '''
 #'''
 
 
-# # Updating Postal Codes
+# # Testing Post Codes updating
 # [Adapted from Auditing City Name]
 
-# In[10]:
+# In[6]:
 
-#'''
+
 pprint.pprint(dict(pstl_codes))
-for pstl_codes, ways in pstl_codes.iteritems():
+for pstl_code, ways in pstl_codes.iteritems():
     for name in ways:
-        better_name = update_name(name, mapping)
-#'''
+        better_name = update_name_with_mapping(name, mapping_postalcodes)
+        print name, better_name 
+
+        #Note: there isn't a mapping for 
+        #every unexpected entry, so some better names will be unchanged from name
 
 
 # # Code for printing out file
 
-# In[17]:
+# In[ ]:
 
 def shape_element(element):
     print element
@@ -396,7 +385,7 @@ def shape_element(element):
 
 # # Code for preparing for MongoDB
 
-# In[28]:
+# In[3]:
 
 lower = re.compile(r'^([a-z]|_)*$')
 lower_colon = re.compile(r'^([a-z]|_)*:([a-z]|_)*$')
@@ -442,10 +431,19 @@ def shape_element(element):
                     elif re.match('addr:',child.attrib['k']): #if k tag starts with addr:
                         if child.attrib['k'].count(':') > 1: #if k tag has 2 colons, ignore
                             pass
-                        else:
+                        else: #
                             temp = child.attrib['k'].split(':')[1]
-                            this_address[temp] = child.attrib['v']
-                            #insert here
+                            if temp == 'street':
+                                this_address[temp] = update_name_with_mapping(child.attrib['v'], mapping_street)
+                            elif temp == 'city':
+                                this_address[temp] = update_name_with_mapping(child.attrib['v'], mapping_city)
+                            elif temp == 'province':
+                                this_address[temp] = update_name_with_mapping(child.attrib['v'], mapping_prov)
+                            elif temp == 'postcode':
+                                this_address[temp] = update_name_with_mapping(child.attrib['v'], mapping_postalcodes)
+                            else:
+                                this_address[temp] = child.attrib['v']
+                            #start here
                     
                     elif child.attrib['k'].count(':') > 0: #if k tag does not start with addr: but has a colon
                         if child.attrib['k'].count(':') > 1: #if k tag has 2 colons, ignore
@@ -480,7 +478,7 @@ def shape_element(element):
 
 # # Code for dumping to JSON
 
-# In[30]:
+# In[ ]:
 
 def process_map(file_in, pretty = False):
     # Note from Udacity: You do not need to change this file
@@ -497,4 +495,9 @@ def process_map(file_in, pretty = False):
                     fo.write(json.dumps(el) + "\n")
     return data
 data = process_map(osmfile, False)
+
+
+# In[ ]:
+
+
 
